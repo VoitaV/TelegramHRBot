@@ -120,11 +120,12 @@ def handle_preference_response(bot, message, user_data):
         if user_data[user_id]['direction'] == "разработка":
             msg = bot.send_message(message.chat.id, "Точно? 30 минут! Вперед, Разработчики!")
             # Здесь вызываем функцию для начала теста для разработчиков
-            bot.register_next_step_handler(msg, lambda m:test_razrab_start(bot, message, user_data))
+            bot.register_next_step_handler(msg, lambda m: test_razrab_start(bot, m, user_data))
+
         elif user_data[user_id]['direction'] == "аналитика":
             msg = bot.send_message(message.chat.id, "Точно? 30 минут! Вперед, Аналитики!")
             # Здесь вызываем функцию для начала теста для аналитиков
-            bot.register_next_step_handler(msg, lambda m:test_analit_start(bot, message, user_data))
+            bot.register_next_step_handler(msg, lambda m:test_analit_start(bot, m, user_data))
     elif response == "нет, вернуться к выбору":
         show_direction_description(bot, message, user_data)
     else:

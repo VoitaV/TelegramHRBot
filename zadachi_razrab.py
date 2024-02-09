@@ -1,9 +1,9 @@
-# zadachi.py
+# zadachi_razrab.py
 
 import time
 import threading
 from telebot import types  # Импортируем типы для кнопок
-
+import openpyxl
 # Функция для запуска тестирования
 def test_razrab_start(bot, message, user_data):
     user_id = message.from_user.id
@@ -13,9 +13,7 @@ def test_razrab_start(bot, message, user_data):
     user_data[user_id]['start_time'] = time.time()
     user_data[user_id]['test_started'] = True
     user_data[user_id]['current_question_index'] = 0
-    # keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
-    # keyboard.add(types.KeyboardButton("Да! Я весь внимание!"))
-    # msg = bot.send_message(message.chat.id, "Время уже пошло! Ты точно сосредоточен?", reply_markup=keyboard)
+    
     send_question(bot, message, user_data)
     # Запускаем таймер для завершения теста через 3 минуты
     timer = threading.Timer(180, finish_test_timeout, args=[bot, message, user_data])
@@ -27,9 +25,14 @@ def send_question(bot, message, user_data):
     current_question_index = user_data[user_id]['current_question_index']
     if current_question_index < len(questions):
         question = questions[current_question_index]
-        # Создаем клавиатуру с вариантами ответов
-        keyboard = create_answer_keyboard(question['answers'])
-        bot.send_message(message.chat.id, f"{question['text']}", reply_markup=keyboard)
+        if question['type'] == 'текст':
+            keyboard = create_answer_keyboard(question['answers'])
+            bot.send_message(message.chat.id, f"{question['content']}", reply_markup=keyboard)
+        elif question['type'] == 'картинка':
+            with open(question['content'], 'rb') as photo:
+                bot.send_photo(message.chat.id, photo)
+            keyboard = create_answer_keyboard(question['answers'])
+            bot.send_message(message.chat.id, "Выберите ответ:", reply_markup=keyboard)
         bot.register_next_step_handler(message, lambda m: handle_answer(bot, m, user_data))
     else:
         finish_test(bot, message, user_data)
@@ -41,7 +44,7 @@ def handle_answer(bot, message, user_data):
         if current_question_index < len(questions):
             question = questions[current_question_index]
             user_answer = message.text.strip()
-            if user_answer.lower() == question['correct_answer'].lower():
+            if str(user_answer).lower() == str(question['correct_answer']).lower():
                 user_data[user_id]['score'] += 1
             user_data[user_id][f'question{current_question_index + 1}_answer'] = user_answer
             user_data[user_id]['current_question_index'] += 1
@@ -75,20 +78,24 @@ def create_answer_keyboard(answers):
     return keyboard
 
 # Список вопросов для теста
-questions = [
-    {
-        'text': 'Вопрос 1: Сколько будет 2 + 2?',
-        'answers': ['3', '4', '5', '6'],
-        'correct_answer': '4'
-    },
-    {
-        'text': 'Вопрос 2: Какой год был високосным: 2000, 2010, 2012, 2020?',
-        'answers': ['2000', '2010', '2012', '2020'],
-        'correct_answer': '2012'
-    },
-    {
-        'text': 'Вопрос 3: Что из перечисленного является фруктом: апельсин, помидор, картофель, огурец?',
-        'answers': ['Апельсин', 'Помидор', 'Картофель', 'Огурец'],
-        'correct_answer': 'Апельсин'
-    }
-]
+def load_questions_from_excel(filename):
+    questions = []
+    wb = openpyxl.load_workbook(filename)
+    sheet = wb.active
+    for row in sheet.iter_rows(min_row=2, values_only=True):
+        question_number = row[0]
+        question_type = row[1]  # Тип вопроса: "текст" или "картинка"
+        question_content = row[2]  # Содержание вопроса (текстовый вопрос или путь к файлу с картинкой)
+        answers = row[3:7]  # Ответы находятся в столбцах с 4 по 7 (включительно)
+        correct_answer = row[7]  # Правильный ответ находится в восьмом столбце
+        questions.append({
+            'number': question_number,
+            'type': question_type,
+            'content': question_content,
+            'answers': answers,
+            'correct_answer': correct_answer
+        })
+    return questions
+
+# Теперь вместо жестко прописанных вопросов используем функцию load_questions_from_excel
+questions = load_questions_from_excel('razrab_zadachi_list.xlsx')

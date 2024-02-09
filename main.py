@@ -19,15 +19,6 @@ user_data = {}
 def start(message: Message):
     handle_start(bot, message, user_data)
 
-# @bot.message_handler(func=lambda message: True)
-# def handle_message(message: Message):
-#     test_start(bot, message, user_data)
-
-# # Обработчик завершения теста
-# @bot.message_handler(func=finish_test)
-# def handle_test_finished(message: Message):
-#     save_to_excel(message, user_data)
-
 def save_to_excel(message: Message, user_data: dict):
     user_id = message.from_user.id
     # Определяем файл Excel в зависимости от направления стажировки
@@ -43,20 +34,7 @@ def save_to_excel(message: Message, user_data: dict):
     try:
         wb = load_workbook(filename=file_name)
         ws = wb.active
-        # ws.append([
-        #     "ID",
-        #     "Ник в телеграм",
-        #     "Имя",
-        #     "Фамилия",
-        #     "Возраст",
-        #     "Откуда узнал",
-        #     "Время начала теста",
-        #     "Время конца теста",
-        #     "Длительность теста",
-        #     "Ответ на вопрос 1",
-        #     "Ответ на вопрос 2",
-        #     "Ответ на вопрос 3"
-        # ])
+        
         next_row = ws.max_row + 1
         # Добавляем данные в строку Excel
         row_data = [
@@ -70,7 +48,7 @@ def save_to_excel(message: Message, user_data: dict):
             datetime.datetime.fromtimestamp(user_data[user_id]['end_time']).strftime('%Y-%m-%d %H:%M:%S'),
             user_data[user_id]['end_time'] - user_data[user_id]['start_time'],
         ]
-        for i in range(3):
+        for i in range(4):
             answer = user_data[user_id][f'question{i + 1}_answer']
             row_data.append(answer)
 
